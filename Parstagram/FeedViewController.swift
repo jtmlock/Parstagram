@@ -16,6 +16,7 @@ class FeedViewController: UIViewController, UITableViewDelegate,
 
     @IBOutlet weak var tableView: UITableView!
     let commentBar = MessageInputBar()
+    var showsCommentBar = false
     
     var posts = [PFObject]()
     
@@ -24,11 +25,17 @@ class FeedViewController: UIViewController, UITableViewDelegate,
         
         tableView.delegate = self
         tableView.dataSource = self
+        
+        tableView.keyboardDismissMode = .interactive
         // Do any additional setup after loading the view.
     }
     
     override var inputAccessoryView: UIView?{
         return commentBar
+    }
+    
+    override var canBecomeFirstResponder: Bool{
+        return showsCommentBar
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -46,13 +53,14 @@ class FeedViewController: UIViewController, UITableViewDelegate,
         }
     }
     
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section:
         Int) -> Int {
         
         let post = posts[section]
         let comments = (post["comments"] as? [PFObject]) ?? []
         
-        return comments.count + 1
+        return comments.count + 2
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {
@@ -80,11 +88,8 @@ class FeedViewController: UIViewController, UITableViewDelegate,
             
             cell.photoView.af_setImage(withURL: url)
             
-            // attempting to fix post height
-            //self.tableView.rowHeight = 25.0
-            
             return cell
-        } else {
+        } else  if indexPath.row <= comments.count {
             let cell = tableView.dequeueReusableCell(withIdentifier: "CommentCell")
                 as! CommentCell
             
@@ -94,8 +99,10 @@ class FeedViewController: UIViewController, UITableViewDelegate,
             let user = comment["author"] as! PFUser
             cell.nameLabel.text = user.username
             
-            // attempting to fix post height
-            //self.tableView.rowHeight = 25.0
+            
+            return cell
+        } else {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "AddCommentCell")!
             
             return cell
         }
@@ -103,22 +110,29 @@ class FeedViewController: UIViewController, UITableViewDelegate,
     
     func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
         let post = posts[indexPath.row]
+        let comments = (post["comments"] as? [PFObject]) ?? []
         
-        let comment = PFObject(className: "Comments")
-        comment["text"] = "This is a random comment"
-        comment["post"] = post
-        comment["author"] = PFUser.current()!
-        
-        post.add(comment, forKey: "comments")
-        
-        post.saveInBackground { (success, error) in
-            if success {
-                print("Comment saved")
-                
-            } else {
-                print("Error saving comment")
-            }
+        if indexPath.row == comments.count + 1 {
+            showsCommentBar = true
+            becomeFirstResponder()
+            commentBar.inputTextView.becomeFirstResponder()
+            
         }
+        
+//        comment["text"] = "This is a random comment"
+//        comment["post"] = post
+//        comment["author"] = PFUser.current()!
+//
+//        post.add(comment, forKey: "comments")
+//
+//        post.saveInBackground { (success, error) in
+//            if success {
+//                print("Comment saved")
+//
+//            } else {
+//                print("Error saving comment")
+//            }
+//        }
      }
 
     /*
